@@ -24,7 +24,7 @@ export default function OrderPanel({ cart, cartOpen, onClose, onUpdateQty, onRem
     setLoading(true);
     try {
       const res = await onCheckout({ payVia });
-      setOrderId(res?.id ?? "-");
+      setOrderId(res?.payment_refcode ?? "-");
       setStep(STEPS.success);
     } catch {
       // error handled by parent
@@ -162,9 +162,9 @@ export default function OrderPanel({ cart, cartOpen, onClose, onUpdateQty, onRem
             </div>
             <div className="un-pay-success-title">Pesanan diterima</div>
             <div className="un-pay-success-sub">
-              Silakan tunjukkan nomor pesanan ke kasir
+              Tunjukkan kode ini ke kasir untuk konfirmasi pembayaran
             </div>
-            <div className="un-pay-order-id">#{orderId}</div>
+            <div className="un-pay-order-id">{orderId}</div>
 
             <div className="un-pay-receipt">
               {cart.map((item) => (
