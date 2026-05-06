@@ -2,6 +2,18 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db/config");
 
+// Buat generate TransID
+function genTransactionCode(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        result += characters.charAt(randomIndex);
+    }
+    let concat = "PAYMENT-" + result;
+    return concat;
+}
+
 // GET semua order
 router.get("/", (req, res) => {
     db.query("SELECT * FROM order_history", (err, results) => {
@@ -23,17 +35,18 @@ router.get("/:id", (req, res) => {
 // POST buat order baru
 router.post("/", (req, res) => {
     const { data_order, pay_via, status } = req.body;
+    const TransID = genTransactionCode(10);
     if (!pay_via || !status)
         return res.status(400).json({ message: "pay_via dan status wajib diisi" });
 
     db.query(
-        "INSERT INTO order_history (data_order, pay_via, status) VALUES (?, ?, ?)",
-        [JSON.stringify(data_order || []), pay_via, status],
+        "INSERT INTO order_history (data_order, pay_via, status, payment_refcode) VALUES (?, ?, ?, ?)",
+        [JSON.stringify(data_order || []), pay_via, status, TransID],
         (err, results) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: "Order berhasil dibuat", id: results.insertId });
+            res.status(201).json({ message: "Order berhasil dibuat", id: results.insertId, payment_refcode: TransID });
         }
-    );
+    );  
 });
 
 // PUT update status order
