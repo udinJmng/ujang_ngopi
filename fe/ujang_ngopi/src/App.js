@@ -5,6 +5,8 @@ import AdminPanel from "./AdminPanel";
 import UjangNgopi from "./UjangNgopi";
 
 const isPanel = window.location.pathname.startsWith("/panel");
+const mejaMatch = window.location.pathname.match(/^\/meja\/(.+)$/);
+const nomorMeja = mejaMatch ? mejaMatch[1] : null;
 
 export default function App() {
     const [user, setUser] = useState(null);
@@ -17,7 +19,7 @@ export default function App() {
 
     const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
-    if (!isPanel) return <UjangNgopi theme={theme} toggleTheme={toggleTheme} />;
+    if (!isPanel) return <UjangNgopi theme={theme} toggleTheme={toggleTheme} nomorMeja={nomorMeja} />;
 
     if (!user) return <LoginPage onLogin={setUser} theme={theme} toggleTheme={toggleTheme} />;
 

@@ -11,7 +11,7 @@ import OrderPanel from "./components/OrderPanel";
 import ProductModal from "./components/ProductModal";
 import Toast from "./components/Toast";
 
-export default function UjangNgopi({ theme, toggleTheme }) {
+export default function UjangNgopi({ theme, toggleTheme, nomorMeja }) {
   const [menu, setMenu] = useState([]);
   const [categories, setCategories] = useState([{ label: "Semua", value: "" }]);
   const [loading, setLoading] = useState(true);
@@ -70,18 +70,19 @@ export default function UjangNgopi({ theme, toggleTheme }) {
       data_order: cart.map((x) => ({ id_menu: x.id_menu, nama: x.label_item, qty: x.qty, price: fp(x) })),
       pay_via: payVia,
       status: "proses",
+      no_meja: nomorMeja,
     };
     return postOrder(payload).then((res) => {
       setCart([]);
       return res;
     });
-  }, [cart]);
+  }, [cart, nomorMeja]);
 
   const totalQty = cart.reduce((a, b) => a + b.qty, 0);
 
   return (
     <div className="un-root">
-      <Navbar totalQty={totalQty} onCartOpen={() => setCartOpen(true)} theme={theme} toggleTheme={toggleTheme} />
+      <Navbar totalQty={totalQty} onCartOpen={() => setCartOpen(true)} theme={theme} toggleTheme={toggleTheme} nomorMeja={nomorMeja} />
 
       <Hero menuRef={menuRef} />
 
@@ -109,6 +110,7 @@ export default function UjangNgopi({ theme, toggleTheme }) {
         onUpdateQty={updateQty}
         onRemoveItem={removeItem}
         onCheckout={checkout}
+        nomorMeja={nomorMeja}
       />
 
       <ProductModal

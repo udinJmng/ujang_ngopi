@@ -3,7 +3,7 @@ import { rp, fp, imgUrl } from "../utils/helpers";
 
 const STEPS = { cart: "cart", payment: "payment", success: "success" };
 
-export default function OrderPanel({ cart, cartOpen, onClose, onUpdateQty, onRemoveItem, onCheckout }) {
+export default function OrderPanel({ cart, cartOpen, onClose, onUpdateQty, onRemoveItem, onCheckout, nomorMeja }) {
   const [step, setStep] = useState(STEPS.cart);
   const [payVia, setPayVia] = useState("cash");
   const [loading, setLoading] = useState(false);
@@ -47,6 +47,7 @@ export default function OrderPanel({ cart, cartOpen, onClose, onUpdateQty, onRem
             <div className="un-panel-header">
               <div className="un-panel-title">Pesanan</div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                {nomorMeja && <span className="un-item-count">Meja {nomorMeja}</span>}
                 <span className="un-item-count">{totalQty} item</span>
                 <button className="un-panel-close" onClick={handleClose}>×</button>
               </div>

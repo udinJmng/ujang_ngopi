@@ -1,7 +1,12 @@
-export default function Navbar({ totalQty, onCartOpen, theme, toggleTheme }) {
+export default function Navbar({ totalQty, onCartOpen, theme, toggleTheme, nomorMeja }) {
   return (
     <nav className="un-nav">
-      <div className="un-logo">Ujang <span>Ngopi</span></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div className="un-logo">Ujang <span>Ngopi</span></div>
+        {nomorMeja && (
+          <span className="un-meja-badge">Meja {nomorMeja}</span>
+        )}
+      </div>
       <div className="un-nav-actions">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, color: "var(--text-muted)", userSelect: "none" }}>
