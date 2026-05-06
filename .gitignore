@@ -2,3 +2,4 @@ api/.env
 /.vscode
 /api/node_modules
 *.jpg
+/fe/ujang_ngopi/node_modules
