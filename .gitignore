@@ -1,0 +1,4 @@
+api/.env
+/.vscode
+/api/node_modules
+*.jpg
