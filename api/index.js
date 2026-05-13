@@ -9,6 +9,7 @@ const akunKaryawanRouter = require("./akun_karyawan/akun_karyawan");
 const orderHistoryRouter = require("./order_history/order_history");
 const tabelKategoriRouter = require("./tabel_kategori/tabel_kategori");
 const uploadRouter = require("./upload/upload");
+const konfigurasi_cabang_kursi = require("./konfigurasi/jumlah_kursi")
 
 app.use(cors());
 app.use(express.json());
@@ -21,7 +22,7 @@ app.use("/api/akun_karyawan", akunKaryawanRouter);
 app.use("/api/order_history", orderHistoryRouter);
 app.use("/api/tabel_kategori", tabelKategoriRouter);
 app.use("/api/upload", uploadRouter);
-
+app.use("/api/konfigurasi", konfigurasi_cabang_kursi)
 app.listen(process.env.APP_PORT_LISTEN, () => {
     console.log(`Server jalan di port ${process.env.APP_PORT_LISTEN}`);
 });
