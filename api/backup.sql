@@ -15,11 +15,11 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 
--- Dumping database structure for ujang_ngopi
-CREATE DATABASE IF NOT EXISTS `ujang_ngopi` /*!40100 DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci */;
-USE `ujang_ngopi`;
+-- Dumping database structure for sukoharjo_ujang_ngopi
+CREATE DATABASE IF NOT EXISTS `sukoharjo_ujang_ngopi` /*!40100 DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci */;
+USE `sukoharjo_ujang_ngopi`;
 
--- Dumping structure for table ujang_ngopi.akun_karyawan
+-- Dumping structure for table sukoharjo_ujang_ngopi.akun_karyawan
 CREATE TABLE IF NOT EXISTS `akun_karyawan` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fName` varchar(100) NOT NULL,
@@ -29,13 +29,27 @@ CREATE TABLE IF NOT EXISTS `akun_karyawan` (
   `avatar_url` longtext NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username_login` (`username_login`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
--- Dumping data for table ujang_ngopi.akun_karyawan: ~1 rows (approximately)
+-- Dumping data for table sukoharjo_ujang_ngopi.akun_karyawan: ~2 rows (approximately)
 INSERT INTO `akun_karyawan` (`id`, `fName`, `lName`, `username_login`, `password_login`, `avatar_url`) VALUES
-	(2, 'Ujang', 'Ananta', 'ujang', '$2b$10$UCgm8YH87djPoU8zTGcBWuWr./uHK9OlCb5zhLRQHFlW8hpEiJhhW', '');
+	(2, 'Ujang', 'Ananta', 'ujang', '$2b$10$UCgm8YH87djPoU8zTGcBWuWr./uHK9OlCb5zhLRQHFlW8hpEiJhhW', ''),
+	(3, 'kevin', 'oj', 'kepin', '$2b$10$AmjvGw6n2KEG8tlN3b9DyOILq79znEA2rMnGxmXWKqfwJSI3RkCbq', '');
 
--- Dumping structure for table ujang_ngopi.list_menu
+-- Dumping structure for table sukoharjo_ujang_ngopi.konfigurasi_cabang
+CREATE TABLE IF NOT EXISTS `konfigurasi_cabang` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nama_konfigurasi` varchar(50) NOT NULL,
+  `VALUE` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `nama_konfigurasi` (`nama_konfigurasi`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+-- Dumping data for table sukoharjo_ujang_ngopi.konfigurasi_cabang: ~1 rows (approximately)
+INSERT INTO `konfigurasi_cabang` (`id`, `nama_konfigurasi`, `VALUE`) VALUES
+	(1, 'jumlah_kursi', 5);
+
+-- Dumping structure for table sukoharjo_ujang_ngopi.list_menu
 CREATE TABLE IF NOT EXISTS `list_menu` (
   `id_menu` int(11) NOT NULL AUTO_INCREMENT,
   `nama_item` varchar(40) DEFAULT NULL,
@@ -50,14 +64,14 @@ CREATE TABLE IF NOT EXISTS `list_menu` (
   CONSTRAINT `fk_kategori` FOREIGN KEY (`id_kategori`) REFERENCES `tabel_kategori` (`id_kategori`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
--- Dumping data for table ujang_ngopi.list_menu: ~4 rows (approximately)
+-- Dumping data for table sukoharjo_ujang_ngopi.list_menu: ~4 rows (approximately)
 INSERT INTO `list_menu` (`id_menu`, `nama_item`, `label_item`, `gambar_item`, `price`, `disc_perc`, `id_kategori`, `desc_item`) VALUES
 	(1, 'kopi_gulaaren', 'Kopi Gula Aren', '/uploads/1778040043853-506201.jpg', 14000.00, 20, 1, 'Make gula aren asli ga boong :)'),
 	(2, 'matcha1', 'Matcha Original', '/uploads/1778040673288-583374.png', 15000.00, 25, 1, 'Rasanya pahit coy kek kenangan masa lalu :)'),
 	(3, 'matcha2', 'Matcha Manis', '/uploads/1778040646963-503032.png', 15000.00, 10, 1, 'Manis seperti janji'),
 	(4, 'nasgor1', 'Nasi Goreng Spesial', '/uploads/1778040600857-974690.png', 25000.00, 15, 2, 'Pedas kek omongan tetangga');
 
--- Dumping structure for table ujang_ngopi.order_history
+-- Dumping structure for table sukoharjo_ujang_ngopi.order_history
 CREATE TABLE IF NOT EXISTS `order_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `data_order` longtext DEFAULT '[]',
@@ -65,31 +79,25 @@ CREATE TABLE IF NOT EXISTS `order_history` (
   `pay_at` date DEFAULT curdate(),
   `status` enum('sukses','proses') DEFAULT NULL,
   `payment_refcode` longtext DEFAULT NULL,
+  `no_meja` varchar(20) DEFAULT NULL,
+  `total_pay` decimal(10,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `payment_refcode` (`payment_refcode`) USING HASH
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
--- Dumping data for table ujang_ngopi.order_history: ~10 rows (approximately)
-INSERT INTO `order_history` (`id`, `data_order`, `pay_via`, `pay_at`, `status`, `payment_refcode`) VALUES
-	(1, '[{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":1,"price":21250}]', 'qris', '2026-05-06', 'proses', NULL),
-	(2, '[{"id_menu":2,"nama":"Matcha Original","qty":1,"price":11250},{"id_menu":1,"nama":"Kopi Gula Aren","qty":4,"price":11200}]', 'qris', '2026-05-06', 'proses', NULL),
-	(3, '[{"id_menu":2,"nama":"Matcha Original","qty":1,"price":11250},{"id_menu":3,"nama":"Matcha Manis","qty":2,"price":13500}]', 'cash', '2026-05-06', 'proses', NULL),
-	(4, '[{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":2,"price":21250}]', 'cash', '2026-05-06', 'proses', NULL),
-	(5, '[{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":1,"price":21250}]', 'cash', '2026-05-06', 'proses', NULL),
-	(6, '[{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":1,"price":21250}]', 'cash', '2026-05-06', 'proses', 'test'),
-	(7, '[{"id_menu":1,"nama":"Kopi Gula Aren","qty":1,"price":11200}]', 'cash', '2026-05-06', 'proses', 'PAYMENT-BNpKprSpoS'),
-	(8, '[{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":1,"price":21250}]', 'cash', '2026-05-06', 'proses', 'PAYMENT-QyW9nUNfpy'),
-	(9, '[{"id_menu":1,"nama":"Kopi Gula Aren","qty":2,"price":11200}]', 'cash', '2026-05-06', 'proses', 'PAYMENT-2DKjt7J0AJ'),
-	(10, '[{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":1,"price":21250},{"id_menu":3,"nama":"Matcha Manis","qty":1,"price":13500},{"id_menu":1,"nama":"Kopi Gula Aren","qty":2,"price":11200}]', 'qris', '2026-05-06', 'proses', 'PAYMENT-N6IE2jcxG0');
+-- Dumping data for table sukoharjo_ujang_ngopi.order_history: ~0 rows (approximately)
+INSERT INTO `order_history` (`id`, `data_order`, `pay_via`, `pay_at`, `status`, `payment_refcode`, `no_meja`, `total_pay`) VALUES
+	(14, '[{"id_menu":1,"nama":"Kopi Gula Aren","qty":2,"price":11200},{"id_menu":2,"nama":"Matcha Original","qty":3,"price":11250},{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":3,"price":21250},{"id_menu":3,"nama":"Matcha Manis","qty":4,"price":13500}]', 'qris', '2026-05-06', 'proses', 'PAYMENT-9NzHZAYHzo', '3', NULL),
+	(15, '[{"id_menu":4,"nama":"Nasi Goreng Spesial","qty":2,"price":21250}]', 'qris', '2026-05-13', 'proses', 'PAYMENT-Rp0yLnEI3k', NULL, NULL);
 
--- Dumping structure for table ujang_ngopi.tabel_kategori
+-- Dumping structure for table sukoharjo_ujang_ngopi.tabel_kategori
 CREATE TABLE IF NOT EXISTS `tabel_kategori` (
   `id_kategori` int(11) NOT NULL AUTO_INCREMENT,
   `nama_kategori` varchar(100) NOT NULL,
   PRIMARY KEY (`id_kategori`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
--- Dumping data for table ujang_ngopi.tabel_kategori: ~2 rows (approximately)
+-- Dumping data for table sukoharjo_ujang_ngopi.tabel_kategori: ~2 rows (approximately)
 INSERT INTO `tabel_kategori` (`id_kategori`, `nama_kategori`) VALUES
 	(1, 'Minuman'),
 	(2, 'Makanan');
