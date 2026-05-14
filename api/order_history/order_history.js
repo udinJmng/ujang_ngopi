@@ -34,14 +34,14 @@ router.get("/:id", (req, res) => {
 
 // POST buat order baru
 router.post("/", (req, res) => {
-    const { data_order, pay_via, status, no_meja } = req.body;
+    const { data_order, pay_via, status, no_meja, total_pay } = req.body;
     const TransID = genTransactionCode(10);
     if (!pay_via || !status)
         return res.status(400).json({ message: "pay_via dan status wajib diisi" });
 
     db.query(
-        "INSERT INTO order_history (data_order, pay_via, status, payment_refcode, no_meja) VALUES (?, ?, ?, ?, ?)",
-        [JSON.stringify(data_order || []), pay_via, status, TransID, no_meja || null],
+        "INSERT INTO order_history (data_order, pay_via, status, payment_refcode, no_meja, total_pay) VALUES (?, ?, ?, ?, ?, ?)",
+        [JSON.stringify(data_order || []), pay_via, status, TransID, no_meja || null, total_pay || null],
         (err, results) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ message: "Order berhasil dibuat", id: results.insertId, payment_refcode: TransID });
