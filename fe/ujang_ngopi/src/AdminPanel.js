@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "./styles/panel.css";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
 const emptyForm = { fName: "", lName: "", username_login: "", password_login: "", avatar_url: "" };
 
