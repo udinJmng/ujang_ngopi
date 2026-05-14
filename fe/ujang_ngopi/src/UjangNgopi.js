@@ -23,7 +23,6 @@ export default function UjangNgopi({ theme, toggleTheme, nomorMeja }) {
   const toastTimer = useRef(null);
   const menuRef = useRef(null);
 
-  // Fetch menu & kategori dari API
   useEffect(() => {
     Promise.all([fetchMenu(), fetchKategori()])
       .then(([menuData, katData]) => {
@@ -66,11 +65,16 @@ export default function UjangNgopi({ theme, toggleTheme, nomorMeja }) {
   }, []);
 
   const checkout = useCallback(({ payVia }) => {
+    const sub = cart.reduce((a, b) => a + fp(b) * b.qty, 0);
+    const tax = Math.round(sub * 0.11);
+    const svc = Math.round(sub * 0.05);
+    const total = sub + tax + svc;
     const payload = {
       data_order: cart.map((x) => ({ id_menu: x.id_menu, nama: x.label_item, qty: x.qty, price: fp(x) })),
       pay_via: payVia,
       status: "proses",
       no_meja: nomorMeja,
+      total_pay: total,
     };
     return postOrder(payload).then((res) => {
       setCart([]);
