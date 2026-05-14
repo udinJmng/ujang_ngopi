@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./styles/panel.css";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
 export default function LoginPage({ onLogin, theme, toggleTheme }) {
     const [tab, setTab] = useState("karyawan");
