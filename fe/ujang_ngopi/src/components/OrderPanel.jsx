@@ -27,7 +27,6 @@ export default function OrderPanel({ cart, cartOpen, onClose, onUpdateQty, onRem
       setOrderId(res?.payment_refcode ?? "-");
       setStep(STEPS.success);
     } catch {
-      // error handled by parent
     } finally {
       setLoading(false);
     }
