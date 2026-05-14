@@ -3,3 +3,4 @@ api/.env
 /api/node_modules
 *.jpg
 /fe/ujang_ngopi/node_modules
+fe/ujang_ngopi/.env
