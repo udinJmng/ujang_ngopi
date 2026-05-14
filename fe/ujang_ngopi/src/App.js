@@ -41,7 +41,6 @@ export default function App() {
 
     const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
-    // Root "/" dan path lain yang bukan /meja atau /panel → blokir
     if (!isPanel && !isMejaPath) return (
         <div style={noAccessStyle}>
             <div style={{ fontSize: 26, fontFamily: "Fraunces, serif", color: "#3d2314" }}>
@@ -68,7 +67,7 @@ export default function App() {
                 Meja tidak ditemukan
             </div>
             <div style={{ fontSize: 14, color: "#8c7060", lineHeight: 1.7 }}>
-                Web Invalid
+                    Web Invalid
             </div>
         </div>
     );
