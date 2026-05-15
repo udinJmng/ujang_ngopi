@@ -391,3 +391,105 @@ select.kd-input, select.ap-input { cursor: pointer; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+/* ─── MEJA BADGE ─── */
+.un-meja-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--amber);
+  background: rgba(181,101,29,0.1);
+  border: 1px solid rgba(181,101,29,0.2);
+  padding: 3px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* ─── RESPONSIVE PANEL ─── */
+
+/* Tablet */
+@media (max-width: 900px) {
+  .kd-main, .ap-main { padding: 24px 20px; }
+  .kd-sidebar, .ap-sidebar { width: 200px; }
+  .kd-table-wrap, .ap-table-wrap { overflow-x: auto; }
+}
+
+/* Mobile — sidebar becomes top nav bar */
+@media (max-width: 680px) {
+  .kd-root, .ap-root { flex-direction: column; }
+
+  .kd-sidebar, .ap-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    gap: 6px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .kd-sidebar-logo, .ap-sidebar-logo {
+    width: 100%;
+    margin-bottom: 0;
+    padding: 0;
+    font-size: 16px;
+  }
+
+  .kd-sidebar-user, .ap-sidebar-role {
+    width: 100%;
+    margin-bottom: 4px;
+    padding: 0;
+  }
+
+  .kd-nav-item, .ap-nav-item {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 7px 12px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .kd-nav-item.active, .ap-nav-item.active {
+    border-color: var(--amber);
+  }
+
+  .sidebar-bottom {
+    margin-top: 0;
+    flex-direction: row;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .sidebar-theme-btn, .kd-logout, .ap-logout {
+    width: auto;
+    padding: 7px 12px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .kd-main, .ap-main { padding: 20px 16px; }
+
+  .kd-page-title, .ap-page-title { font-size: 22px; }
+
+  .kd-toolbar, .ap-toolbar { flex-direction: column; align-items: stretch; }
+  .kd-search, .ap-search { width: 100%; }
+  .kd-add-btn, .ap-add-btn { justify-content: center; }
+
+  .kd-table-wrap, .ap-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .kd-table, .ap-table { min-width: 560px; }
+
+  .kd-modal, .ap-modal { padding: 24px 20px; }
+  .ap-row { grid-template-columns: 1fr; }
+
+  .lp-card { padding: 32px 24px; }
+}
+
+/* Very small */
+@media (max-width: 400px) {
+  .kd-sidebar, .ap-sidebar { padding: 10px 12px; }
+  .kd-nav-item, .ap-nav-item { font-size: 11px; padding: 6px 10px; }
+  .kd-main, .ap-main { padding: 16px 12px; }
+}

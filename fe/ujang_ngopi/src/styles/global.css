@@ -822,3 +822,15 @@ body {
 @media (max-width: 360px) {
   .un-products { grid-template-columns: 1fr; }
 }
+
+/* ─── MEJA BADGE ─── */
+.un-meja-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--amber);
+  background: rgba(181,101,29,0.1);
+  border: 1px solid rgba(181,101,29,0.2);
+  padding: 3px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
