@@ -29,6 +29,8 @@ export default function LoginPage({ onLogin, theme, toggleTheme }) {
             });
             const data = await res.json();
             if (!res.ok) { setError(data.message); return; }
+
+            localStorage.setItem("token", data.token);
             onLogin(tab === "admin" ? { role: "admin" } : { role: "karyawan", ...data.data });
         } catch {
             setError("Tidak bisa terhubung ke server");

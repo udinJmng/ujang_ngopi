@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import "./styles/panel.css";
-
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
+import { fetchKaryawan, createKaryawan, updateKaryawan, deleteKaryawan } from "./api/api";
 
 const emptyForm = { fName: "", lName: "", username_login: "", password_login: "", avatar_url: "" };
 
@@ -19,32 +18,24 @@ export default function AdminPanel({ onLogout, theme, toggleTheme }) {
         setTimeout(() => setToast((t) => ({ ...t, show: false })), 2500);
     }, []);
 
-    const fetchKaryawan = useCallback(() => {
-        fetch(`${API_BASE}/api/akun_karyawan`)
-            .then((r) => r.json())
-            .then(setKaryawan)
-            .catch(() => showToast("Gagal memuat data karyawan"));
+    const loadKaryawan = useCallback(() => {
+        fetchKaryawan().then(setKaryawan).catch(() => showToast("Gagal memuat data karyawan"));
     }, [showToast]);
 
-    useEffect(() => { fetchKaryawan(); }, [fetchKaryawan]);
+    useEffect(() => { loadKaryawan(); }, [loadKaryawan]);
 
     const saveKaryawan = async () => {
         setModalError("");
         setSaving(true);
         const { data, mode } = modal;
-        const url = mode === "edit" ? `${API_BASE}/api/akun_karyawan/${data.id}` : `${API_BASE}/api/akun_karyawan`;
-        const method = mode === "edit" ? "PUT" : "POST";
         try {
-            const res = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-            const json = await res.json();
-            if (!res.ok) { setModalError(json.message || "Gagal menyimpan"); return; }
+            const json = mode === "edit"
+                ? await updateKaryawan(data.id, data)
+                : await createKaryawan(data);
+            if (!json || json.error) { setModalError(json?.message || "Gagal menyimpan"); return; }
             showToast(mode === "edit" ? "Data karyawan diperbarui" : "Akun karyawan berhasil dibuat");
             setModal(null);
-            fetchKaryawan();
+            loadKaryawan();
         } catch {
             setModalError("Tidak bisa terhubung ke server");
         } finally {
@@ -52,13 +43,11 @@ export default function AdminPanel({ onLogout, theme, toggleTheme }) {
         }
     };
 
-    const deleteKaryawan = async (id) => {
+    const handleDeleteKaryawan = async (id) => {
         try {
-            const res = await fetch(`${API_BASE}/api/akun_karyawan/${id}`, { method: "DELETE" });
-            const json = await res.json();
-            if (!res.ok) { showToast(json.message); return; }
+            await deleteKaryawan(id);
             showToast("Akun karyawan dihapus");
-            fetchKaryawan();
+            loadKaryawan();
         } catch {
             showToast("Gagal menghapus");
         } finally {
@@ -239,7 +228,7 @@ export default function AdminPanel({ onLogout, theme, toggleTheme }) {
                         </div>
                         <div className="ap-confirm-btns">
                             <button className="ap-btn-cancel" onClick={() => setConfirm(null)}>Batal</button>
-                            <button className="ap-btn-danger" onClick={() => deleteKaryawan(confirm.id)}>Hapus</button>
+                            <button className="ap-btn-danger" onClick={() => handleDeleteKaryawan(confirm.id)}>Hapus</button>
                         </div>
                     </div>
                 </div>

@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./styles/panel.css";
-import { fetchOrderHistory, updateOrderStatus, fetchKonfigurasi, updateKonfigurasi } from "./api/api";
+import {
+    fetchMenu as apiFetchMenu, fetchKategori as apiFetchKategori,
+    createMenu, updateMenu, deleteMenu as apiDeleteMenu,
+    createKategori, updateKategori, deleteKategori as apiDeleteKategori,
+    fetchOrderHistory, updateOrderStatus,
+    fetchKonfigurasi, updateKonfigurasi,
+    uploadGambar,
+} from "./api/api";
 
-const API_BASE = process.env.REACT_APP_API_BASE
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
 
 const emptyMenu = { nama_item: "", label_item: "", gambar_item: "", price: "", disc_perc: "", id_kategori: "", desc_item: "" };
 const emptyKat = { nama_kategori: "" };
@@ -16,6 +23,15 @@ const resolveImg = (val) => {
 
 const rp = (n) => "Rp" + Number(n).toLocaleString("id-ID");
 
+const calcTotal = (order) => {
+    if (order.total_pay) return Number(order.total_pay);
+    try {
+        const items = JSON.parse(order.data_order || "[]");
+        const sub = items.reduce((a, b) => a + (Number(b.price) * Number(b.qty)), 0);
+        return sub + Math.round(sub * 0.11) + Math.round(sub * 0.05);
+    } catch { return 0; }
+};
+
 function KonfRow({ item, onSave }) {
     const [val, setVal] = useState(item.VALUE);
     const [saving, setSaving] = useState(false);
@@ -23,25 +39,12 @@ function KonfRow({ item, onSave }) {
         <tr>
             <td>{item.nama_konfigurasi}</td>
             <td>
-                <input
-                    className="kd-input"
-                    type="number"
-                    style={{ width: 80 }}
-                    value={val}
-                    min={1}
-                    onChange={(e) => setVal(e.target.value)}
-                />
+                <input className="kd-input" type="number" style={{ width: 80 }} value={val} min={1}
+                    onChange={(e) => setVal(e.target.value)} />
             </td>
             <td>
-                <button
-                    className="kd-btn-edit"
-                    disabled={saving}
-                    onClick={async () => {
-                        setSaving(true);
-                        await onSave(item.nama_konfigurasi, Number(val));
-                        setSaving(false);
-                    }}
-                >
+                <button className="kd-btn-edit" disabled={saving}
+                    onClick={async () => { setSaving(true); await onSave(item.nama_konfigurasi, Number(val)); setSaving(false); }}>
                     {saving ? "..." : "Simpan"}
                 </button>
             </td>
@@ -60,27 +63,22 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
     const [uploading, setUploading] = useState(false);
     const [imgPreview, setImgPreview] = useState("");
     const [toast, setToast] = useState({ msg: "", show: false });
-    const fileInputRef = useRef(null);
-
     const [orders, setOrders] = useState([]);
     const [konfigurasi, setKonfigurasi] = useState([]);
     const [detailOrder, setDetailOrder] = useState(null);
+    const fileInputRef = useRef(null);
 
     const showToast = useCallback((msg) => {
         setToast({ msg, show: true });
         setTimeout(() => setToast((t) => ({ ...t, show: false })), 2500);
     }, []);
 
-    const fetchMenu = useCallback(() => {
-        fetch(`${API_BASE}/api/get_menu`)
-            .then((r) => r.json()).then(setMenu)
-            .catch(() => showToast("Gagal memuat menu"));
+    const loadMenu = useCallback(() => {
+        apiFetchMenu().then(setMenu).catch(() => showToast("Gagal memuat menu"));
     }, [showToast]);
 
-    const fetchKat = useCallback(() => {
-        fetch(`${API_BASE}/api/tabel_kategori`)
-            .then((r) => r.json()).then(setKategori)
-            .catch(() => showToast("Gagal memuat kategori"));
+    const loadKat = useCallback(() => {
+        apiFetchKategori().then(setKategori).catch(() => showToast("Gagal memuat kategori"));
     }, [showToast]);
 
     const loadOrders = useCallback(() => {
@@ -91,27 +89,11 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
         fetchKonfigurasi().then(setKonfigurasi).catch(() => showToast("Gagal memuat konfigurasi"));
     }, [showToast]);
 
-    useEffect(() => { fetchMenu(); fetchKat(); }, [fetchMenu, fetchKat]);
-
+    useEffect(() => { loadMenu(); loadKat(); }, [loadMenu, loadKat]);
     useEffect(() => {
         if (page === "histori") loadOrders();
         if (page === "konfigurasi") loadKonfigurasi();
     }, [page, loadOrders, loadKonfigurasi]);
-
-    const calculateOrderTotal = (order) => {
-        if (order.total_pay) return Number(order.total_pay);
-        try {
-            const items = JSON.parse(order.data_order || "[]");
-            if (!Array.isArray(items)) return 0;
-
-            const sub = items.reduce((a, b) => a + (Number(b.price || 0) * Number(b.qty || 0)), 0);
-            const tax = Math.round(sub * 0.11);
-            const svc = Math.round(sub * 0.05);
-            return sub + tax + svc;
-        } catch (e) {
-            return 0;
-        }
-    };
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -120,43 +102,34 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
         const formData = new FormData();
         formData.append("gambar", file);
         try {
-            const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", body: formData });
-            const json = await res.json();
-            if (!res.ok) { showToast(json.message || "Upload gagal"); return; }
-            setImgPreview(`${API_BASE}${json.url}`);
-            setModal((m) => ({ ...m, data: { ...m.data, gambar_item: json.url } }));
-            showToast("Gambar berhasil diupload");
-        } catch {
-            showToast("Gagal upload gambar");
-        } finally {
-            setUploading(false);
-        }
+            const json = await uploadGambar(formData);
+            if (json.url) {
+                setImgPreview(`${API_BASE}${json.url}`);
+                setModal((m) => ({ ...m, data: { ...m.data, gambar_item: json.url } }));
+                showToast("Gambar berhasil diupload");
+            } else {
+                showToast(json.message || "Upload gagal");
+            }
+        } catch { showToast("Gagal upload gambar"); }
+        finally { setUploading(false); }
     };
 
     const saveMenu = async () => {
         setSaving(true);
         const { data, mode } = modal;
-        const url = mode === "edit" ? `${API_BASE}/api/get_menu/${data.id_menu}` : `${API_BASE}/api/get_menu`;
         try {
-            const res = await fetch(url, {
-                method: mode === "edit" ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-            const json = await res.json();
-            if (!res.ok) { showToast(json.message || "Gagal menyimpan"); return; }
+            const json = mode === "edit" ? await updateMenu(data.id_menu, data) : await createMenu(data);
+            if (json.error || json.message?.includes("gagal")) { showToast(json.message || "Gagal menyimpan"); return; }
             showToast(mode === "edit" ? "Menu diperbarui" : "Menu ditambahkan");
-            setModal(null); fetchMenu();
+            setModal(null); loadMenu();
         } catch { showToast("Tidak bisa terhubung ke server"); }
         finally { setSaving(false); }
     };
 
-    const deleteMenu = async (id) => {
+    const handleDeleteMenu = async (id) => {
         try {
-            const res = await fetch(`${API_BASE}/api/get_menu/${id}`, { method: "DELETE" });
-            const json = await res.json();
-            if (!res.ok) { showToast(json.message); return; }
-            showToast("Menu dihapus"); fetchMenu();
+            await apiDeleteMenu(id);
+            showToast("Menu dihapus"); loadMenu();
         } catch { showToast("Gagal menghapus"); }
         finally { setConfirm(null); }
     };
@@ -164,27 +137,19 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
     const saveKategori = async () => {
         setSaving(true);
         const { data, mode } = modal;
-        const url = mode === "edit" ? `${API_BASE}/api/tabel_kategori/${data.id_kategori}` : `${API_BASE}/api/tabel_kategori`;
         try {
-            const res = await fetch(url, {
-                method: mode === "edit" ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-            const json = await res.json();
-            if (!res.ok) { showToast(json.message || "Gagal menyimpan"); return; }
+            const json = mode === "edit" ? await updateKategori(data.id_kategori, data) : await createKategori(data);
+            if (json.error) { showToast(json.message || "Gagal menyimpan"); return; }
             showToast(mode === "edit" ? "Kategori diperbarui" : "Kategori ditambahkan");
-            setModal(null); fetchKat(); fetchMenu();
+            setModal(null); loadKat(); loadMenu();
         } catch { showToast("Tidak bisa terhubung ke server"); }
         finally { setSaving(false); }
     };
 
-    const deleteKategori = async (id) => {
+    const handleDeleteKategori = async (id) => {
         try {
-            const res = await fetch(`${API_BASE}/api/tabel_kategori/${id}`, { method: "DELETE" });
-            const json = await res.json();
-            if (!res.ok) { showToast(json.message); return; }
-            showToast("Kategori dihapus"); fetchKat(); fetchMenu();
+            await apiDeleteKategori(id);
+            showToast("Kategori dihapus"); loadKat(); loadMenu();
         } catch { showToast("Gagal menghapus"); }
         finally { setConfirm(null); }
     };
@@ -210,22 +175,16 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
             <aside className="kd-sidebar">
                 <div className="kd-sidebar-logo">Ujang <span>Ngopi</span></div>
                 <div className="kd-sidebar-user">Halo, {user.fName}</div>
-
                 {[
                     { key: "menu", label: "Menu" },
                     { key: "kategori", label: "Kategori" },
                     { key: "histori", label: "Histori Pembayaran" },
                     { key: "konfigurasi", label: "Konfigurasi Meja" },
                 ].map(({ key, label }) => (
-                    <button
-                        key={key}
-                        className={`kd-nav-item${page === key ? " active" : ""}`}
-                        onClick={() => navTo(key)}
-                    >
+                    <button key={key} className={`kd-nav-item${page === key ? " active" : ""}`} onClick={() => navTo(key)}>
                         {label}
                     </button>
                 ))}
-
                 <div className="sidebar-bottom">
                     <button className="sidebar-theme-btn" onClick={toggleTheme}>
                         {theme === "dark" ? "Light Mode" : "Dark Mode"}
@@ -235,7 +194,6 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
             </aside>
 
             <main className="kd-main">
-
                 {page === "menu" && (
                     <>
                         <div className="kd-page-title">Kelola <span>Menu</span></div>
@@ -317,17 +275,7 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                         </div>
                         <div className="kd-table-wrap">
                             <table className="kd-table">
-                                <thead>
-                                    <tr>
-                                        <th>Refcode</th>
-                                        <th>Meja</th>
-                                        <th>Metode</th>
-                                        <th>Total</th>
-                                        <th>Tanggal</th>
-                                        <th>Status</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr><th>Refcode</th><th>Meja</th><th>Metode</th><th>Total</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
                                 <tbody>
                                     {filteredOrders.length === 0 ? (
                                         <tr><td colSpan={7} className="kd-empty">Belum ada histori pembayaran</td></tr>
@@ -336,9 +284,7 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                                             <td style={{ fontFamily: "monospace", fontSize: 12 }}>{o.payment_refcode || "-"}</td>
                                             <td>{o.no_meja ? `Meja ${o.no_meja}` : <span style={{ color: "var(--text-muted)" }}>-</span>}</td>
                                             <td><span className="kd-badge">{o.pay_via}</span></td>
-                                            {/* --- PERUBAHAN DISINI: Pakai fungsi calculateOrderTotal --- */}
-                                            <td className="kd-price">{rp(calculateOrderTotal(o))}</td>
-                                            {/* ----------------------------------------------------- */}
+                                            <td className="kd-price">{rp(calcTotal(o))}</td>
                                             <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{o.pay_at}</td>
                                             <td>
                                                 <span style={{
@@ -346,32 +292,18 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                                                     fontSize: 11, fontWeight: 500,
                                                     background: o.status === "sukses" ? "rgba(39,174,96,0.1)" : "rgba(181,101,29,0.1)",
                                                     color: o.status === "sukses" ? "var(--green)" : "var(--amber)",
-                                                }}>
-                                                    {o.status}
-                                                </span>
+                                                }}>{o.status}</span>
                                             </td>
                                             <td>
                                                 <div className="kd-actions">
-                                                    <button
-                                                        className="kd-btn-edit"
-                                                        onClick={() => setDetailOrder(o)}
-                                                    >
-                                                        Detail
-                                                    </button>
+                                                    <button className="kd-btn-edit" onClick={() => setDetailOrder(o)}>Detail</button>
                                                     {o.status === "proses" && (
-                                                        <button
-                                                            className="kd-btn-edit"
+                                                        <button className="kd-btn-edit"
                                                             style={{ background: "rgba(39,174,96,0.1)", borderColor: "rgba(39,174,96,0.3)", color: "var(--green)" }}
                                                             onClick={async () => {
-                                                                try {
-                                                                    await updateOrderStatus(o.id, "sukses");
-                                                                    showToast("Pembayaran dikonfirmasi");
-                                                                    loadOrders();
-                                                                } catch {
-                                                                    showToast("Gagal update status");
-                                                                }
-                                                            }}
-                                                        >
+                                                                try { await updateOrderStatus(o.id, "sukses"); showToast("Pembayaran dikonfirmasi"); loadOrders(); }
+                                                                catch { showToast("Gagal update status"); }
+                                                            }}>
                                                             Konfirmasi
                                                         </button>
                                                     )}
@@ -396,26 +328,16 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                                     {konfigurasi.length === 0 ? (
                                         <tr><td colSpan={3} className="kd-empty">Memuat konfigurasi...</td></tr>
                                     ) : konfigurasi.map((k) => (
-                                        <KonfRow
-                                            key={k.id}
-                                            item={k}
-                                            onSave={async (nama, val) => {
-                                                try {
-                                                    await updateKonfigurasi(nama, val);
-                                                    showToast("Konfigurasi disimpan");
-                                                    loadKonfigurasi();
-                                                } catch {
-                                                    showToast("Gagal menyimpan");
-                                                }
-                                            }}
-                                        />
+                                        <KonfRow key={k.id} item={k} onSave={async (nama, val) => {
+                                            try { await updateKonfigurasi(nama, val); showToast("Konfigurasi disimpan"); loadKonfigurasi(); }
+                                            catch { showToast("Gagal menyimpan"); }
+                                        }} />
                                     ))}
                                 </tbody>
                             </table>
                         </div>
                     </>
                 )}
-
             </main>
 
             {modal?.type === "menu" && (
@@ -430,28 +352,22 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                         ].map(({ key, label, placeholder, type }) => (
                             <div className="kd-field" key={key}>
                                 <label className="kd-label">{label}</label>
-                                <input
-                                    className="kd-input" type={type || "text"} placeholder={placeholder}
+                                <input className="kd-input" type={type || "text"} placeholder={placeholder}
                                     value={modal.data[key]}
-                                    onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, [key]: e.target.value } }))}
-                                />
+                                    onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, [key]: e.target.value } }))} />
                             </div>
                         ))}
                         <div className="kd-field">
                             <label className="kd-label">Deskripsi</label>
-                            <textarea
-                                className="kd-input" placeholder="Ceritain dikit soal menu ini..." rows={3}
+                            <textarea className="kd-input" placeholder="Ceritain dikit soal menu ini..." rows={3}
                                 style={{ resize: "vertical", lineHeight: 1.6 }}
                                 value={modal.data.desc_item}
-                                onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, desc_item: e.target.value } }))}
-                            />
+                                onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, desc_item: e.target.value } }))} />
                         </div>
                         <div className="kd-field">
                             <label className="kd-label">Foto Menu</label>
-                            <div
-                                className={`kd-img-upload-area${imgPreview ? " has-preview" : ""}`}
-                                onClick={() => !uploading && fileInputRef.current?.click()}
-                            >
+                            <div className={`kd-img-upload-area${imgPreview ? " has-preview" : ""}`}
+                                onClick={() => !uploading && fileInputRef.current?.click()}>
                                 {uploading ? (
                                     <div className="kd-img-uploading">Mengupload...</div>
                                 ) : imgPreview ? (
@@ -472,11 +388,8 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                         </div>
                         <div className="kd-field">
                             <label className="kd-label">Kategori</label>
-                            <select
-                                className="kd-input"
-                                value={modal.data.id_kategori}
-                                onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, id_kategori: e.target.value } }))}
-                            >
+                            <select className="kd-input" value={modal.data.id_kategori}
+                                onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, id_kategori: e.target.value } }))}>
                                 <option value="">Pilih kategori</option>
                                 {kategori.map((k) => (
                                     <option key={k.id_kategori} value={k.id_kategori}>{k.nama_kategori}</option>
@@ -497,11 +410,9 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                         <div className="kd-modal-title">{modal.mode === "add" ? "Tambah Kategori" : "Edit Kategori"}</div>
                         <div className="kd-field">
                             <label className="kd-label">Nama Kategori</label>
-                            <input
-                                className="kd-input" type="text" placeholder="Minuman"
+                            <input className="kd-input" type="text" placeholder="Minuman"
                                 value={modal.data.nama_kategori}
-                                onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, nama_kategori: e.target.value } }))}
-                            />
+                                onChange={(e) => setModal((m) => ({ ...m, data: { ...m.data, nama_kategori: e.target.value } }))} />
                         </div>
                         <div className="kd-modal-footer">
                             <button className="kd-btn-cancel" onClick={() => setModal(null)}>Batal</button>
@@ -518,41 +429,35 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                         <div className="kd-confirm-msg"><strong>{confirm.name}</strong> akan dihapus permanen.</div>
                         <div className="kd-confirm-btns">
                             <button className="kd-btn-cancel" onClick={() => setConfirm(null)}>Batal</button>
-                            <button className="kd-btn-danger" onClick={() => confirm.type === "menu" ? deleteMenu(confirm.id) : deleteKategori(confirm.id)}>Hapus</button>
+                            <button className="kd-btn-danger"
+                                onClick={() => confirm.type === "menu" ? handleDeleteMenu(confirm.id) : handleDeleteKategori(confirm.id)}>
+                                Hapus
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className={`kd-toast${toast.show ? " show" : ""}`}>{toast.msg}</div>
-
             {detailOrder && (() => {
                 let items = [];
                 try { items = JSON.parse(detailOrder.data_order || "[]"); } catch { items = []; }
-                const sub = items.reduce((a, b) => a + (b.price * b.qty), 0);
+                const sub = items.reduce((a, b) => a + (Number(b.price) * Number(b.qty)), 0);
                 const tax = Math.round(sub * 0.11);
                 const svc = Math.round(sub * 0.05);
-                
-                const total = calculateOrderTotal(detailOrder);
-
+                const total = calcTotal(detailOrder);
                 return (
                     <div className="kd-modal-wrap" onClick={(e) => { if (e.target === e.currentTarget) setDetailOrder(null); }}>
                         <div className="kd-modal" style={{ maxWidth: 500 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                                 <div>
                                     <div className="kd-modal-title" style={{ marginBottom: 4 }}>Detail Pesanan</div>
-                                    <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--text-muted)" }}>
-                                        {detailOrder.payment_refcode}
-                                    </div>
+                                    <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--text-muted)" }}>{detailOrder.payment_refcode}</div>
                                 </div>
                                 <span style={{
-                                    display: "inline-block", padding: "3px 12px", borderRadius: 6,
-                                    fontSize: 12, fontWeight: 500,
+                                    display: "inline-block", padding: "3px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500,
                                     background: detailOrder.status === "sukses" ? "rgba(39,174,96,0.1)" : "rgba(181,101,29,0.1)",
                                     color: detailOrder.status === "sukses" ? "var(--green)" : "var(--amber)",
-                                }}>
-                                    {detailOrder.status}
-                                </span>
+                                }}>{detailOrder.status}</span>
                             </div>
 
                             <div style={{ display: "flex", gap: 24, marginBottom: 20, fontSize: 13 }}>
@@ -572,9 +477,7 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
 
                             <div style={{ background: "var(--bg2)", borderRadius: 10, padding: "4px 0", marginBottom: 16 }}>
                                 {items.length === 0 ? (
-                                    <div style={{ padding: "16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
-                                        Data item tidak tersedia
-                                    </div>
+                                    <div style={{ padding: 16, textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>Data item tidak tersedia</div>
                                 ) : items.map((item, i) => (
                                     <div key={i} style={{
                                         display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -584,13 +487,9 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                                     }}>
                                         <div>
                                             <div style={{ fontWeight: 500, color: "var(--text)" }}>{item.nama}</div>
-                                            <div style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                                                {rp(item.price)} × {item.qty}
-                                            </div>
+                                            <div style={{ color: "var(--text-muted)", fontSize: 12 }}>{rp(item.price)} × {item.qty}</div>
                                         </div>
-                                        <div style={{ fontWeight: 500, color: "var(--brown)" }}>
-                                            {rp(item.price * item.qty)}
-                                        </div>
+                                        <div style={{ fontWeight: 500, color: "var(--brown)" }}>{rp(item.price * item.qty)}</div>
                                     </div>
                                 ))}
                             </div>
@@ -609,8 +508,7 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                                     display: "flex", justifyContent: "space-between",
                                     padding: "10px 0 4px", marginTop: 6,
                                     borderTop: "1px solid var(--border)",
-                                    fontFamily: "Fraunces, serif", fontSize: 18,
-                                    color: "var(--brown)",
+                                    fontFamily: "Fraunces, serif", fontSize: 18, color: "var(--brown)",
                                 }}>
                                     <span>Total</span>
                                     <span style={{ color: "var(--amber)" }}>{rp(total)}</span>
@@ -619,20 +517,15 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
 
                             <div className="kd-modal-footer">
                                 {detailOrder.status === "proses" && (
-                                    <button
-                                        className="kd-btn-save"
-                                        style={{ background: "var(--green)" }}
+                                    <button className="kd-btn-save" style={{ background: "var(--green)" }}
                                         onClick={async () => {
                                             try {
                                                 await updateOrderStatus(detailOrder.id, "sukses");
                                                 showToast("Pembayaran dikonfirmasi");
                                                 setDetailOrder(null);
                                                 loadOrders();
-                                            } catch {
-                                                showToast("Gagal update status");
-                                            }
-                                        }}
-                                    >
+                                            } catch { showToast("Gagal update status"); }
+                                        }}>
                                         Konfirmasi Pembayaran
                                     </button>
                                 )}
@@ -642,6 +535,8 @@ export default function KaryawanDashboard({ user, onLogout, theme, toggleTheme }
                     </div>
                 );
             })()}
+
+            <div className={`kd-toast${toast.show ? " show" : ""}`}>{toast.msg}</div>
         </div>
     );
 }

@@ -41,6 +41,11 @@ export default function App() {
 
     const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        setUser(null);
+    };
+
     if (!isPanel && !isMejaPath) return (
         <div style={noAccessStyle}>
             <div style={{ fontSize: 26, fontFamily: "Fraunces, serif", color: "#3d2314" }}>
@@ -76,8 +81,8 @@ export default function App() {
 
     if (!user) return <LoginPage onLogin={setUser} theme={theme} toggleTheme={toggleTheme} />;
 
-    if (user.role === "admin") return <AdminPanel onLogout={() => setUser(null)} theme={theme} toggleTheme={toggleTheme} />;
-    if (user.role === "karyawan") return <KaryawanDashboard user={user} onLogout={() => setUser(null)} theme={theme} toggleTheme={toggleTheme} />;
+    if (user.role === "admin") return <AdminPanel onLogout={handleLogout} theme={theme} toggleTheme={toggleTheme} />;
+    if (user.role === "karyawan") return <KaryawanDashboard user={user} onLogout={handleLogout} theme={theme} toggleTheme={toggleTheme} />;
 
     return null;
 }
