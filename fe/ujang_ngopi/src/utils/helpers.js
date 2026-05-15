@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3000";
+const API_BASE = process.env.REACT_APP_API_BASE
 
 export const rp = (n) => "Rp" + Number(n).toLocaleString("id-ID");
 
