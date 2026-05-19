@@ -18,8 +18,15 @@ app.use(helmet({
     contentSecurityPolicy: false,
 }));
 
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || "http://localhost:3001")
+    .split(",")
+    .map((o) => o.trim());
+
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGIN,
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error("Not allowed by CORS"));
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
